@@ -3,20 +3,20 @@ import matplotlib
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 
-
 #Representation of the farm as a 5x5 matrix with a single infected cell in the center
 farm = np.zeros((5, 5), dtype=int)
 farm[2, 2] = 1
 img = plt.imshow(farm, cmap='Blues', vmin=0, vmax=1)
 plt.axis('off')
+rng = np.random.default_rng()
 
 
-def propagate_infection(matriz):
+def propagate_infection(matrix):
     #creation of the matrices shifted in each direction place
-    right = np.roll(matriz, 1, axis=1)
-    left =np.roll(matriz, -1, axis=1)
-    up = np.roll(matriz, 1, axis=0)
-    down = np.roll(matriz, -1, axis=0)
+    right = np.roll(matrix, 1, axis=1)
+    left =np.roll(matrix, -1, axis=1)
+    up = np.roll(matrix, 1, axis=0)
+    down = np.roll(matrix, -1, axis=0)
 
     #correction of the edges to prevent "wrap-around"
     right[:, 0] = 0
@@ -30,16 +30,23 @@ def propagate_infection(matriz):
     mask_up = up == 1
     mask_down = down == 1
 
-    #combination of the masks
-    mask_combined_horizontal = mask_right | mask_left
-    mask_combined_vertical = mask_up | mask_down
-    mask_combined = mask_combined_horizontal | mask_combined_vertical
+ 
+    #Infected matrix and probability of infection
+    infected_neighbors_right = mask_right.astype(int)
+    infected_neighbors_left = mask_left.astype(int)
+    infected_neighbors_up = mask_up.astype(int)
+    infected_neighbors_down = mask_down.astype(int)
 
-    new_infected = (matriz == 0) & mask_combined    
+    infected_neighbors_total = (infected_neighbors_right + infected_neighbors_left + infected_neighbors_up + infected_neighbors_down)    
 
-    matriz[new_infected] = 1
+    probability_of_infection = 1 - (1 -0.30) ** infected_neighbors_total
+    aleatory_matrix = rng.random(matrix.shape) 
+    condition_matrix = aleatory_matrix < probability_of_infection
+    comparation_matrix = (matrix == 0) & condition_matrix
+    matrix[comparation_matrix] = 1
+ 
+    return matrix 
 
-    return matriz 
 
 #loop to propagate the infection for 4 iterations
 for iteration in range(4):
