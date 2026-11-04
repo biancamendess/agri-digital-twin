@@ -3,8 +3,6 @@ import matplotlib
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap, BoundaryNorm
-from src.epidemiology.propagation import propagate_infection
-
 
 colors = ['#9CA3AF', '#FACC15', '#EF4444', '#22A06B']
 cmap = ListedColormap(colors)
@@ -29,22 +27,71 @@ plt.axis('off')
 rng = np.random.default_rng()
 
 
+def propagate_infection(matrix):
+
+    # Identify infectious neighbors in the four orthogonal directions
+    right = np.roll(matrix, 1, axis=1)
+    left = np.roll(matrix, -1, axis=1)
+    up = np.roll(matrix, 1, axis=0)
+    down = np.roll(matrix, -1, axis=0)
+
+    # Prevent wrap-around between opposite edges
+    right[:, 0] = 0
+    left[:, -1] = 0
+    up[0, :] = 0
+    down[-1, :] = 0
+
+    mask_right = right == 2
+    mask_left = left == 2
+    mask_up = up == 2
+    mask_down = down == 2
+
+    infected_neighbors_total = (
+        mask_right.astype(int)
+        + mask_left.astype(int)
+        + mask_up.astype(int)
+        + mask_down.astype(int)
+    )
+
+    # Calculate transmission probability based on infectious neighbors
+    probability_of_infection = 1 - (1 - 0.30) ** infected_neighbors_total
+    aleatory_matrix = rng.random(matrix.shape)
+    condition_matrix = aleatory_matrix < probability_of_infection
+    comparation_matrix = (matrix == 0) & condition_matrix
+
+    # Susceptible (S) -> Exposed (E)
+    exposed_mask = matrix == 1
+    exposure_time[exposed_mask] += 1
+    matrix[comparation_matrix] = 1
+    exposure_time[comparation_matrix] = 0
+
+    # Infectious (I) -> Recovered (R)
+    infected_mask = matrix == 2
+    infection_time[infected_mask] += 1
+
+    ready_to_recover_mask = infected_mask & (infection_time >= infectious_period)
+    matrix[ready_to_recover_mask] = 3
+
+    # Exposed (E) -> Infectious (I)
+    ready_to_infect_mask = exposed_mask & (exposure_time >= incubation_period)
+    matrix[ready_to_infect_mask] = 2
+    infection_time[ready_to_infect_mask] = 0
+    exposure_time[ready_to_infect_mask] = 0
+
+    return matrix
+
+
 # Run the simulation
 for iteration in range(70):
 
-    farm, exposure_time, infection_time = propagate_infection(
-        farm,
-        exposure_time,
-        infection_time,
-        rng,
-        incubation_period,
-        infectious_period
-    )
+    farm = propagate_infection(farm)
 
     susceptible_count = np.count_nonzero(farm == 0)
     exposed_count = np.count_nonzero(farm == 1)
     infectious_count = np.count_nonzero(farm == 2)
     recovered_count = np.count_nonzero(farm == 3)
+
+
 
     print(f"Round {iteration + 1}:")
     print(farm)
