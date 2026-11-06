@@ -3,7 +3,7 @@ import matplotlib
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap, BoundaryNorm
-from src.epidemiology.propagation import propagate_infection
+from prototipo_v1.propagation import propagate_infection
 
 
 colors = ['#9CA3AF', '#FACC15', '#EF4444', '#22A06B']

@@ -1,0 +1,7 @@
+# Data Science & Arrays
+numpy>=1.24.0
+
+# Visualization
+matplotlib>=3.7.0
+
+# (Futuras dependências para GeoIA e ML serão adicionadas aqui)

@@ -1,242 +1,79 @@
-# Intelligent Agricultural Disease Detection and Epidemiological Simulation
+# Gêmeo Digital Epidemiológico para Doenças Agrícolas
 
-An ongoing research and development project focused on combining hyperspectral imaging, machine learning, geospatial analysis, and epidemiological modeling to detect agricultural diseases, identify infection hotspots, and simulate their spatial and temporal spread.
+Um sistema integrado de Inteligência Artificial Geoespacial (GeoIA) e modelagem matemática, projetado para simular a propagação espacial e temporal de patógenos agrícolas em cenários reais.
 
-The long-term goal is to develop an intelligent system capable of identifying potential disease infections in crops, locating affected areas, estimating how an outbreak may evolve, and supporting decisions about where field inspections and disease management efforts should be prioritized.
+O projeto tem como estudo de caso a **Ferrugem Asiática da Soja** (*Phakopsora pachyrhizi*). O objetivo do sistema é transcender a detecção estática de doenças, criando um "Gêmeo Digital" da lavoura que ingere imagens de satélite, identifica focos iniciais de infecção via Machine Learning e simula a dispersão futura da doença utilizando tensores meteorológicos (como direção e velocidade do vento).
 
-**Initial case study:** Asian soybean rust (*Phakopsora pachyrhizi*).
+## O Problema e a Proposta de Valor
 
-## Project Vision
+A abordagem tradicional de monitoramento agrícola depende da identificação visual de sintomas ou da classificação estática de imagens. Quando uma doença como a ferrugem asiática se torna detectável em larga escala, o dano econômico já está consolidado.
 
-Agricultural diseases can spread across a field before their presence becomes visually apparent. Identifying early infection hotspots and understanding how a disease may spread are important steps toward more targeted monitoring and management.
+Este projeto propõe uma mudança de paradigma da **análise descritiva** para a **análise preditiva e prescritiva**. Através da combinação de sensoriamento remoto e dinâmica de fluidos/propagação, o sistema não apenas responde "onde a doença está hoje", mas projeta "como ela se espalhará nos próximos 14 dias", permitindo intervenções agronômicas cirúrgicas e otimização do uso de defensivos.
 
-This project proposes an integrated approach with two main components:
+## Arquitetura do Sistema (Data Pipeline & Modular Core)
 
-1. **Hyperspectral disease detection:** Analyze spectral information from crop images to identify patterns associated with plant infection, including potentially asymptomatic stages.
-2. **Epidemiological simulation:** Use detected infection hotspots as initial conditions for a spatial and temporal model that simulates disease dissemination across the crop.
+O software foi desenhado utilizando princípios de *Separation of Concerns* (SoC), garantindo que a ingestão de dados geoespaciais, a inferência do modelo de IA e o motor matemático de simulação operem de forma desacoplada e escalável.
 
-By connecting these components, the system aims to distinguish between areas with evidence of infection and areas that may still be healthy but are at higher risk of becoming infected.
+O sistema é dividido em quatro camadas lógicas (Pipelines):
 
-The expected outcome is a decision-support system that can help identify where to inspect first, which areas require closer monitoring, and where preventive or management actions may be most relevant.
+### 1. Camada de Ingestão e Processamento Geoespacial
+Responsável por traduzir o mundo físico para o ambiente computacional.
+* **Processamento de Imagens:** Ingestão de arquivos GeoTIFF (ex: Sentinel-2) para extração de bandas multiespectrais e cálculo de índices vegetativos (NDVI, NDRE).
+* **Mapeamento de Restrições:** Geração de matrizes booleanas (Máscaras de Plantio) para garantir que a simulação ocorra estritamente sobre áreas de cultivo, respeitando barreiras físicas naturais (estradas, rios).
 
-## Proposed System Architecture
+### 2. Camada de Inteligência Artificial (Visão Computacional)
+Atua como o "Diagnóstico Inicial" do sistema.
+* Utiliza modelos de Machine Learning (Baseline: Random Forest / Avançado: Redes Neurais Convolucionais para segmentação) para mapear anomalias espectrais.
+* **Output:** Gera um mapa geo-referenciado de probabilidade de infecção, estabelecendo o "Paciente Zero" e as condições iniciais (sementes) para o motor de simulação.
 
-The project is organized into three interconnected components.
+### 3. Camada de Simulação Epidemiológica (O Motor Matemático)
+O núcleo de alta performance do sistema, fundamentado em dinâmica SEIR (Suscetível, Exposto, Infeccioso, Recuperado) adaptada para matrizes espaciais.
+* **Processamento Vetorizado:** Utiliza NumPy para computar transições de estado celular através de convoluções locais.
+* **Tensores Meteorológicos:** A matriz de propagação não é isotrópica (perfeitamente circular). O motor aplica Kernels Direcionais baseados em dados de vento, gerando plumas de dispersão assimétricas que mimetizam a biologia real da dispersão de esporos.
 
-### 1. Hyperspectral Disease Detection
+### 4. Camada de Apresentação e Suporte à Decisão
+Isola a renderização visual da lógica de negócios.
+* Projeta as matrizes de simulação de volta para o sistema de coordenadas geográficas originais, gerando **Mapas de Risco Futuro** que podem ser consumidos por sistemas GIS corporativos ou visualizados localmente (via Matplotlib/GeoPandas).
 
-Hyperspectral images contain information across multiple narrow wavelength bands, allowing the analysis of spectral signatures that may reveal physiological changes in plants.
+## Stack Tecnológico
 
-This component will investigate how machine learning models can distinguish between:
+A infraestrutura foi selecionada visando manipulação eficiente de tensores e dados geoespaciais:
 
-- Healthy plants.
-- Infected plants without visible symptoms.
-- Infected plants with visible symptoms.
-- Other stress conditions that may produce similar spectral responses.
+* **Linguagem:** Python 3.10+
+* **Core Matemático:** NumPy (Processamento de tensores e máscaras de alta performance).
+* **Geoespacial:** Rasterio e GeoPandas (Manipulação de CRS e arquivos GeoTIFF).
+* **Machine Learning:** Scikit-Learn e PyTorch (Em desenvolvimento).
+* **Renderização:** Matplotlib.
+* **Qualidade de Software:** Pytest (Garantia de determinismo matemático das matrizes de transição).
 
-The objective is to estimate infection probabilities and generate spatial maps highlighting potential disease hotspots.
+## Instalação e Reprodutibilidade
 
-### 2. Spatial and Temporal Epidemiological Simulation
+O projeto utiliza gerenciamento estrito de dependências para garantir a reprodutibilidade dos ambientes de Ciência de Dados e Simulação.
 
-The infection hotspots identified by the detection component will be used to initialize a disease propagation model.
-
-The simulator will progressively incorporate biological and environmental factors that influence disease development and dissemination, such as:
-
-- Infection and incubation periods.
-- Pathogen development and sporulation.
-- Spore dispersal.
-- Wind direction and intensity.
-- Temperature and humidity.
-- Leaf wetness and environmental suitability.
-- Crop distribution and spatial characteristics.
-
-The model will simulate how the disease may evolve over time and identify regions that could become vulnerable to infection.
-
-### 3. Risk Mapping and Decision Support
-
-The final component will combine detection results and simulation outputs to produce spatial information that can support agricultural monitoring.
-
-Potential outputs include:
-
-- Maps of detected or suspected infection hotspots.
-- Estimated disease progression over time.
-- Areas with elevated risk of future infection.
-- Priority regions for field inspection.
-- Comparisons between different environmental and epidemiological scenarios.
-
-The system is intended to support decision-making, not replace field diagnosis or professional agronomic recommendations.
-
-## Initial Study Case: Asian Soybean Rust
-
-The first disease selected for investigation is Asian soybean rust, caused by the fungus *Phakopsora pachyrhizi*.
-
-This disease is particularly relevant because of its agricultural and economic impact, as well as the importance of environmental conditions and spore dispersal in its epidemiological dynamics.
-
-The initial research will investigate the use of hyperspectral information to identify spectral patterns associated with soybean rust, followed by the development of a disease-specific spatial propagation model.
-
-The architecture will be designed with the possibility of future adaptation to other agricultural diseases.
-
-## Current Development
-
-The project is currently in its computational modeling stage.
-
-A preliminary spatial simulator is being developed using Python and NumPy. Its purpose is to establish the computational foundations required for representing spatial environments, infection states, neighborhood relationships, and temporal evolution.
-
-The current prototype explores:
-
-- Two-dimensional spatial environments represented by NumPy arrays.
-- Infection propagation between neighboring cells.
-- Vectorized operations and boolean masks.
-- Boundary handling and spatial relationships.
-- Iterative simulation and visualization with Matplotlib.
-- Different transmission rules and probabilities.
-
-This prototype is a starting point for the future epidemiological model. It does not yet represent the complete biological dynamics of Asian soybean rust.
-
-## Development Roadmap
-
-The project will be developed incrementally through the following stages.
-
-### Phase 1 — Computational Foundations
-
-- [x] Create a two-dimensional simulation environment.
-- [x] Define an initial infected location.
-- [x] Implement neighborhood detection using `np.roll`.
-- [x] Apply vectorized operations and boolean masks.
-- [x] Handle matrix boundaries.
-- [x] Implement iterative infection propagation.
-- [x] Visualize spatial infection patterns using Matplotlib.
-- [x] Animate infection progression over time.
-- [x] Display healthy and infected cell counts.
-- [x] Experiment with transmission rules and probabilities.
-- [ ] Consolidate and test the simulation of epidemiological states and incubation periods.
-- [ ] Improve the representation of spatial barriers and environmental conditions.
-
-### Phase 2 — Hyperspectral Data Acquisition and Processing
-
-- [ ] Research available hyperspectral datasets related to soybean diseases.
-- [ ] Investigate data acquisition methods and sensor characteristics.
-- [ ] Study spectral calibration and reflectance conversion.
-- [ ] Explore spectral preprocessing and noise reduction.
-- [ ] Analyze spectral signatures of healthy and infected plants.
-- [ ] Organize and document the experimental dataset.
-
-### Phase 3 — Machine Learning for Disease Detection
-
-- [ ] Define reliable infection labels and reference diagnoses.
-- [ ] Explore methods for distinguishing healthy, asymptomatic, and symptomatic plants.
-- [ ] Develop baseline machine learning models.
-- [ ] Evaluate classification performance and false positive rates.
-- [ ] Investigate early-stage disease detection.
-- [ ] Generate infection probability maps.
-
-### Phase 4 — Spatial Identification of Infection Hotspots
-
-- [ ] Associate detection results with spatial coordinates.
-- [ ] Generate georeferenced infection probability maps.
-- [ ] Identify and group spatially connected infection hotspots.
-- [ ] Estimate hotspot location, size, and confidence.
-- [ ] Investigate hotspot evolution using images acquired on different dates.
-
-### Phase 5 — Disease-Specific Epidemiological Modeling
-
-- [ ] Study the biological dynamics of Asian soybean rust.
-- [ ] Define epidemiological states and transition rules.
-- [ ] Model infection latency and sporulation.
-- [ ] Investigate local and wind-driven spore dispersal.
-- [ ] Incorporate relevant meteorological variables.
-- [ ] Evaluate the model under different environmental scenarios.
-
-### Phase 6 — Integration of Detection and Simulation
-
-- [ ] Use detected infection hotspots as simulation initial conditions.
-- [ ] Incorporate uncertainty in infection location and detection confidence.
-- [ ] Simulate disease progression across the agricultural area.
-- [ ] Generate maps of estimated infection and future risk.
-- [ ] Compare simulated outcomes with subsequent field observations.
-
-### Phase 7 — Decision-Support System
-
-- [ ] Develop geospatial visualization of infection and risk maps.
-- [ ] Identify priority areas for field inspection.
-- [ ] Compare alternative disease management scenarios.
-- [ ] Evaluate the usefulness of risk maps for monitoring decisions.
-- [ ] Investigate the generalization of the system to other crops and diseases.
-
-## Technologies and Tools
-
-**Current technologies**
-
-- Python
-- NumPy
-- Matplotlib
-- Git and GitHub
-
-**Technologies to be explored**
-
-- Pandas
-- Scikit-learn
-- PyTorch
-- Rasterio
-- GeoPandas
-- Xarray
-- Geospatial visualization tools
-
-The technology stack will evolve according to the requirements of each development stage.
-
-## Getting Started
-
-Clone the repository:
-
+1. Clone o repositório:
 ```bash
-git clone https://github.com/biancamendess/simulador-epidemiologico.git
+git clone https://github.com/seu-usuario/simulador-epidemiologico.git
 cd simulador-epidemiologico
 ```
 
-Create and activate a virtual environment on Linux:
-
+2. Crie e ative um ambiente virtual:
 ```bash
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate  # No Windows: .venv\Scripts\activate
 ```
 
-Install the current dependencies:
-
+3. Instale as dependências da aplicação:
 ```bash
-python -m pip install numpy matplotlib
+pip install -r requirements.txt
 ```
 
-On Ubuntu or Debian, install Tkinter if it is not already available:
-
-```bash
-sudo apt update
-sudo apt install python3-tk
-```
-
-Run the simulator:
-
+4. Execute o motor de simulação base (Proof of Concept):
 ```bash
 python main.py
 ```
 
-## Scientific Considerations and Limitations
+## Estado Atual e Evolução
 
-The project is under active development and its proposed integrated system has not yet been validated in real agricultural field conditions.
+O projeto encontra-se na fase de **Consolidação do Motor Matemático**. A atual *Proof of Concept* (PoC) implementa a dinâmica espacial SEIR com processamento vetorizado puro, rodando sobre matrizes sintéticas para homologação da lógica de contágio e vizinhança.
 
-Some important research challenges include:
-
-- Spectral variations caused by diseases may overlap with those caused by other plant stresses.
-- Detecting an infection before visible symptoms requires reliable reference data and experimental validation.
-- The earliest detected infection hotspot is not necessarily the actual origin of the outbreak.
-- Disease propagation depends on biological and environmental factors that must be represented using appropriate data and scientific assumptions.
-- Results obtained under controlled experimental conditions may not generalize directly to different fields, sensors, cultivars, or environmental conditions.
-
-The system will therefore be developed and evaluated in separate stages, with explicit attention to uncertainty, data quality, and independent validation.
-
-## Project Objective
-
-The ultimate objective is to connect real-world disease detection with epidemiological simulation.
-
-Rather than simply identifying where a disease is present, the proposed system aims to estimate how it may spread, identify vulnerable areas, and help prioritize monitoring and management efforts.
-
-**Detect the infection. Locate its hotspots. Simulate its spread. Support better decisions.**
+As próximas etapas de engenharia focarão na implementação dos pipelines de dados detalhados na Arquitetura (Integração de GeoTIFF via Rasterio e acoplamento dos tensores de vento).
